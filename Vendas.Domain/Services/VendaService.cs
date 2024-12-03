@@ -12,6 +12,7 @@ namespace Vendas.Domain.Services
         private readonly IVendaRepository _vendaRepository;
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
+
         public VendaService(IVendaRepository vendaRepository, ILogger<VendaService> logger, IMapper mapper)
         {
             _vendaRepository = vendaRepository;
@@ -49,14 +50,52 @@ namespace Vendas.Domain.Services
 
         public async Task<ServicesResponse<VendaModel>> AdicionarAsync(VendaModel vendaReq)
         {
-            vendaReq.DataVenda = DateTime.UtcNow;
+            if (vendaReq == null || vendaReq.Itens == null || !vendaReq.Itens.Any())
+            {
+                _logger.LogWarning("Requisição ou itens estão nulos ou vazios.");
+                return new ServicesResponse<VendaModel>(false, null, "A requisição ou os itens da venda não podem ser nulos ou vazios.");
+            }
 
-            vendaReq.ValorTotal = vendaReq.Itens.Sum(item => item.Quantidade * (item.PrecoUnitario - item.Desconto));
+            vendaReq.DataVenda = DateTime.UtcNow;
+            if (vendaReq.Itens.Any(i => i.Quantidade > 20))
+            {
+                _logger.LogWarning($"Tentativa de vender mais de 20 itens para o produto {vendaReq.Itens.First().ProdutoId}.");
+                return new ServicesResponse<VendaModel>(false, vendaReq, $"Não é possível vender mais de 20 itens iguais do produto {vendaReq.Itens.First().ProdutoId}.");
+            }
+
+            AplicarRegraDesconto(vendaReq);
+
+            GerarValorTotal(vendaReq);
 
             var venda = _mapper.Map<Venda>(vendaReq);
+
             var novaVenda = _mapper.Map<VendaModel>(await _vendaRepository.AdicionarAsync(venda));
 
             return new ServicesResponse<VendaModel>(true, novaVenda, "Venda adicionada com sucesso.");
+        }
+
+        private static void GerarValorTotal(VendaModel vendaReq)
+        {
+            vendaReq.ValorTotal = vendaReq.Itens.Sum(item => item.Quantidade * (item.PrecoUnitario - item.Desconto));
+        }
+
+        private static void AplicarRegraDesconto(VendaModel vendaReq)
+        {
+            foreach (var item in vendaReq.Itens)
+            {
+                if (item.Quantidade > 4 && item.Quantidade <= 9)
+                {
+                    item.Desconto = item.PrecoUnitario * 0.10m; // 10% de desconto
+                }
+                else if (item.Quantidade >= 10 && item.Quantidade <= 20)
+                {
+                    item.Desconto = item.PrecoUnitario * 0.20m; // 20% de desconto
+                }
+                else
+                {
+                    item.Desconto = 0;
+                }
+            }
         }
 
         public async Task<ServicesResponse<VendaModel>> AtualizarAsync(int vendaId, VendaModel vendaAtualizada)

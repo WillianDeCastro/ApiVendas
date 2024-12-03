@@ -35,6 +35,7 @@ namespace Vendas.Domain.Entities
         [MaxLength(20)]
         public string StatusVenda { get; set; } = "Não Cancelado";
 
-        public List<ItemVenda> Itens { get; set; } = new();
+        //public List<ItemVenda> Itens { get; set; } = new();
+        public List<ItemVenda> Itens { get; set; }
     }
 }

@@ -13,6 +13,9 @@ AutoMapper
 
 Comandos
 dotnet ef migrations add NOMEMIGRATION --project ..\Vendas.Data\Vendas.Data.csproj --startup-project .\Vendas.WebApi.csproj
+
+Logs ficam em 
+ApiVendas\Vendas.WebApi\Logs
  
 Exemplo payload
 {
@@ -28,7 +31,7 @@ Exemplo payload
   "itens": [
     {
       "produto": "Produto Fictício 1",
-      "quantidade": 2,
+      "quantidade": 6,
       "precoUnitario": 50.00,
       "desconto": 0,
       "valorTotalItem": 100.00,
